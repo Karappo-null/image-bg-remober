@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Image Background Remover</title>
 <style>
-:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#19283b;background:#f4f7fb}*{box-sizing:border-box}body{margin:0}main{max-width:1080px;margin:auto;padding:48px 24px}header{text-align:center;margin-bottom:32px}h1{font-size:clamp(26px,5vw,40px);margin:16px 0}p{color:#65758b;line-height:1.8}.card{background:white;border:1px solid #e2e8f0;border-radius:20px;padding:24px;box-shadow:0 8px 32px #243b5308}.drop{display:block;text-align:center;border:2px dashed #b9cae4;border-radius:14px;padding:34px 20px;cursor:pointer;background:#f8faff;transition:.2s}.drop:hover,.drop.over{border-color:#2563eb;background:#eff6ff}.drop strong{display:block;font-size:18px;margin:12px 0}.icon{font-size:32px;color:#2563eb}.hint{font-size:13px;color:#65758b}.file-input{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.drop:focus-within{outline:3px solid #93c5fd;outline-offset:3px}.actions{display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:24px}button,.download{border:0;border-radius:10px;background:#2563eb;color:white;padding:14px 24px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:10px}button:disabled{background:#9aacc7;cursor:not-allowed}.download{background:#0f766e}#downloads{gap:12px}#downloads .download{font-size:13px;padding:12px 14px}.status{min-height:28px;text-align:center;margin:16px 0 0;overflow-wrap:anywhere}.status.error{color:#b42318}.grid>.card{min-width:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}h2{font-size:16px;margin:0 0 16px}.preview{height:340px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;overflow:hidden}.checker{background-color:white;background-image:linear-gradient(45deg,#e2e8f0 25%,transparent 25%),linear-gradient(-45deg,#e2e8f0 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8f0 75%),linear-gradient(-45deg,transparent 75%,#e2e8f0 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0}.preview img{max-width:100%;max-height:100%;object-fit:contain}.placeholder{color:#65758b;padding:20px;text-align:center}.spinner{width:18px;height:18px;border:2px solid #ffffff60;border-top-color:white;border-radius:50%;animation:spin .8s linear infinite}[hidden]{display:none!important}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:650px){main{padding:28px 16px}.grid{grid-template-columns:1fr}.card{padding:18px}.preview{height:280px}}@media(prefers-reduced-motion:reduce){.spinner{animation:none}}
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#19283b;background:#f4f7fb}*{box-sizing:border-box}body{margin:0}main{max-width:1080px;margin:auto;padding:48px 24px}header{text-align:center;margin-bottom:32px}h1{font-size:clamp(26px,5vw,40px);margin:16px 0}p{color:#65758b;line-height:1.8}.card{background:white;border:1px solid #e2e8f0;border-radius:20px;padding:24px;box-shadow:0 8px 32px #243b5308}.drop{display:block;text-align:center;border:2px dashed #b9cae4;border-radius:14px;padding:34px 20px;cursor:pointer;background:#f8faff;transition:.2s}.drop:hover,.drop.over{border-color:#2563eb;background:#eff6ff}.drop strong{display:block;font-size:18px;margin:12px 0}.icon{font-size:32px;color:#2563eb}.hint{font-size:13px;color:#65758b}.file-input{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.drop:focus-within{outline:3px solid #93c5fd;outline-offset:3px}.actions{display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:24px}button,.download{border:0;border-radius:10px;background:#2563eb;color:white;padding:14px 24px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:10px}button:disabled{background:#9aacc7;cursor:not-allowed}.download{background:#0f766e}#downloads{gap:12px}#downloads .download{font-size:13px;padding:12px 14px}.status{min-height:28px;text-align:center;margin:16px 0 0;overflow-wrap:anywhere}.status.error,.drive-status.error{color:#b42318}.drive-status{margin:12px 0 0;overflow-wrap:anywhere}.grid>.card{min-width:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}h2{font-size:16px;margin:0 0 16px}.preview{height:340px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;overflow:hidden}.checker{background-color:white;background-image:linear-gradient(45deg,#e2e8f0 25%,transparent 25%),linear-gradient(-45deg,#e2e8f0 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8f0 75%),linear-gradient(-45deg,transparent 75%,#e2e8f0 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0}.preview img{max-width:100%;max-height:100%;object-fit:contain}.placeholder{color:#65758b;padding:20px;text-align:center}.spinner{width:18px;height:18px;border:2px solid #ffffff60;border-top-color:white;border-radius:50%;animation:spin .8s linear infinite}[hidden]{display:none!important}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:650px){main{padding:28px 16px}.grid{grid-template-columns:1fr}.card{padding:18px}.preview{height:280px}}@media(prefers-reduced-motion:reduce){.spinner{animation:none}}
 </style>
 </head>
 <body>
@@ -18,7 +18,7 @@
 </section>
 <div class="grid">
 <section class="card"><h2>元画像</h2><div class="preview"><img id="original" alt="元画像のプレビュー" hidden><span class="placeholder" id="originalPlaceholder">ここに元画像が表示されます</span></div><div class="actions"><button id="rotateLeft" type="button" disabled>左に90°回転</button><button id="rotateRight" type="button" disabled>右に90°回転</button></div></section>
-<section class="card"><h2>背景を除去した画像</h2><div class="preview checker"><img id="result" alt="背景を透過した画像" hidden><span class="placeholder" id="resultPlaceholder">処理後の画像が表示されます</span></div><div class="actions" id="downloads" hidden><button class="download" id="download" type="button">高画質版をダウンロード</button><button class="download" id="downloadLite" type="button">軽量版をダウンロード</button><button class="download" id="saveDrive" type="button"><span class="spinner" id="driveSpinner" hidden></span><span id="driveButtonText">Google ドライブに保存</span></button></div><p class="hint" id="sizes" hidden></p></section>
+<section class="card"><h2>背景を除去した画像</h2><div class="preview checker"><img id="result" alt="背景を透過した画像" hidden><span class="placeholder" id="resultPlaceholder">処理後の画像が表示されます</span></div><div class="actions" id="downloads" hidden><button class="download" id="download" type="button">高画質版をダウンロード</button><button class="download" id="downloadLite" type="button">軽量版をダウンロード</button><button class="download" id="saveDrive" type="button"><span class="spinner" id="driveSpinner" hidden></span><span id="driveButtonText">Google ドライブに保存</span></button></div><p class="hint drive-status" id="drive-status" role="status" aria-live="polite"></p><p class="hint" id="sizes" hidden></p></section>
 </div>
 </main>
 <script>
@@ -30,7 +30,11 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyyRs8dxfEtPeC9
 let downloadImages = null;
 const downloadUrls = new Set();
 function status(message, error = false) { $('status').textContent = message; $('status').classList.toggle('error', error); }
+function driveStatus(message, error = false) {
+  $('drive-status').textContent = message; $('drive-status').classList.toggle('error', error);
+}
 function clearResult() {
+  driveStatus('');
   resultUrl = null; $('result').hidden = true; $('result').removeAttribute('src');
   $('resultPlaceholder').hidden = false; $('downloads').hidden = true; $('sizes').hidden = true;
   downloadImages = null;
@@ -85,7 +89,7 @@ $('saveDrive').addEventListener('click', async () => {
     savingDrive = true;
     for (const id of ['saveDrive', 'remove', 'file', 'rotateLeft', 'rotateRight']) $(id).disabled = true;
     $('driveSpinner').hidden = false; $('driveButtonText').textContent = '保存中...';
-    status('軽量版をGoogle ドライブに保存しています…');
+    driveStatus('保存中...');
     const response = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
@@ -94,10 +98,9 @@ $('saveDrive').addEventListener('click', async () => {
     if (!response.ok) throw new Error(`保存先がエラーを返しました（HTTP ${response.status}）。`);
     const data = await response.json();
     if (data?.status !== 'success') throw new Error(typeof data?.message === 'string' ? data.message : '保存先から成功の応答を受信できませんでした。');
-    status('Google ドライブに保存しました！');
-    window.alert('Google ドライブに保存しました！');
+    driveStatus('Google ドライブに保存しました');
   } catch (error) {
-    status('Google ドライブへの保存に失敗しました。' + (error instanceof TypeError ? '通信またはCORS設定を確認してください。保存済みの可能性もあるため、ドライブを確認してください。' : error instanceof Error ? error.message : '保存先を確認してください。'), true);
+    driveStatus('保存に失敗しました。' + (error instanceof TypeError ? '通信またはCORS設定を確認してください。保存済みの可能性もあるため、ドライブを確認してください。' : error instanceof Error ? error.message : '保存先を確認してください。'), true);
   } finally {
     savingDrive = false;
     $('saveDrive').disabled = false; $('remove').disabled = !selectedFile; $('file').disabled = false;

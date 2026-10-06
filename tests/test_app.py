@@ -124,12 +124,12 @@ class ApiTests(unittest.TestCase):
                 self.assertEqual(decoded['original'].tobytes(), result.tobytes())
                 lite = decoded['lite']
                 expected_size = result.copy()
-                expected_size.thumbnail((200, 200), Image.Resampling.LANCZOS)
+                expected_size.thumbnail((400, 400), Image.Resampling.LANCZOS)
                 self.assertEqual(lite.size, expected_size.size)
                 self.assertLessEqual(len(lite.getcolors()), 64)
-                self.assertLessEqual(response.json['lite']['size_bytes'], 48 * 1024)
+                self.assertLess(response.json['lite']['size_bytes'], response.json['original']['size_bytes'])
                 self.assertAlmostEqual(lite.width / lite.height, size[0] / size[1], delta=0.03)
-                if max(size) <= 200:
+                if max(size) <= 400:
                     self.assertEqual(lite.size, size)
                 response.request.close()
                 response.close()

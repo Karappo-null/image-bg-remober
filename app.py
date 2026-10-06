@@ -79,7 +79,7 @@ def remove_background():
         if request.form.get('variants') == 'both':
             original = encode_png(result)
             lite = result.copy()
-            lite.thumbnail((200, 200), Image.Resampling.LANCZOS)
+            lite.thumbnail((400, 400), Image.Resampling.LANCZOS)
             # FASTOCTREE supports RGBA and stores alpha in the PNG palette.
             lite = lite.quantize(colors=64, method=Image.Quantize.FASTOCTREE,
                                  dither=Image.Dither.NONE)
