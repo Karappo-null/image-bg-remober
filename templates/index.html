@@ -18,19 +18,57 @@
 </section>
 <div class="grid">
 <section class="card"><h2>元画像</h2><div class="preview"><img id="original" alt="元画像のプレビュー" hidden><span class="placeholder" id="originalPlaceholder">ここに元画像が表示されます</span></div></section>
-<section class="card"><h2>背景を除去した画像</h2><div class="preview checker"><img id="result" alt="背景を透過した画像" hidden><span class="placeholder" id="resultPlaceholder">処理後の画像が表示されます</span></div><div class="actions" id="downloads" hidden><a class="download" id="download" download="image_original.png">高画質版をダウンロード</a><a class="download" id="downloadLite" download="image_lite.png">軽量版をダウンロード</a></div><p class="hint" id="sizes" hidden></p></section>
+<section class="card"><h2>背景を除去した画像</h2><div class="preview checker"><img id="result" alt="背景を透過した画像" hidden><span class="placeholder" id="resultPlaceholder">処理後の画像が表示されます</span></div><div class="actions" id="downloads" hidden><button class="download" id="download" type="button">高画質版をダウンロード</button><button class="download" id="downloadLite" type="button">軽量版をダウンロード</button></div><p class="hint" id="sizes" hidden></p></section>
 </div>
 <footer>初回の処理にはモデルのダウンロードで時間がかかる場合があります。<br>画像はサーバーで処理し、アプリ側ではファイルとして保存しません。</footer>
 </main>
 <script>
 const $ = id => document.getElementById(id);
 let selectedFile = null, originalUrl = null, resultUrl = null, busy = false;
+let downloadImages = null;
+const downloadUrls = new Set();
 function status(message, error = false) { $('status').textContent = message; $('status').classList.toggle('error', error); }
 function clearResult() {
   resultUrl = null; $('result').hidden = true; $('result').removeAttribute('src');
   $('resultPlaceholder').hidden = false; $('downloads').hidden = true; $('sizes').hidden = true;
-  $('download').removeAttribute('href'); $('downloadLite').removeAttribute('href');
+  downloadImages = null;
 }
+function pngBlob(dataUrl) {
+  const prefix = 'data:image/png;base64,';
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith(prefix)) throw new Error('画像データの形式が正しくありません。再度背景を除去してください。');
+  const binary = atob(dataUrl.slice(prefix.length));
+  const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+  const signature = [137, 80, 78, 71, 13, 10, 26, 10];
+  if (!signature.every((byte, index) => bytes[index] === byte)) throw new Error('PNGデータが壊れています。再度背景を除去してください。');
+  return new Blob([bytes], { type: 'image/png' });
+}
+function releaseDownloadUrl(url) {
+  if (downloadUrls.delete(url)) URL.revokeObjectURL(url);
+}
+function downloadPng(variant) {
+  let url = null, link = null;
+  try {
+    const image = downloadImages?.[variant];
+    if (!image || busy) throw new Error('ダウンロードする画像がありません。背景を除去してから再試行してください。');
+    url = URL.createObjectURL(pngBlob(image.dataUrl));
+    downloadUrls.add(url);
+    link = document.createElement('a');
+    link.href = url;
+    link.download = image.filename;
+    link.hidden = true;
+    document.body.appendChild(link);
+    link.click();
+    status('ダウンロードを開始しました。');
+  } catch (error) {
+    status('ダウンロードに失敗しました。' + (error instanceof Error ? error.message : '再試行してください。'), true);
+  } finally {
+    if (link) link.remove();
+    // Let the browser consume the URL before freeing it (immediate revocation can cancel saving).
+    if (url) setTimeout(() => releaseDownloadUrl(url), 30000);
+  }
+}
+$('download').addEventListener('click', () => downloadPng('original'));
+$('downloadLite').addEventListener('click', () => downloadPng('lite'));
 function selectFile(file) {
   if (busy || !file) return;
   if (file.size > 20 * 1024 * 1024) { status('画像は20MB以下にしてください。', true); return; }
@@ -59,12 +97,14 @@ $('remove').addEventListener('click', async () => {
     const response = await fetch('/remove-bg', { method: 'POST', body });
     if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.error || '処理に失敗しました。再試行してください。'); }
     const data = await response.json();
-    if (![data.original, data.lite].every(image => image?.data_url?.startsWith('data:image/png;base64,'))) throw new Error('サーバーから正しい画像を受信できませんでした。');
+    if (![data.original, data.lite].every(image => typeof image?.data_url === 'string' && image.data_url.startsWith('data:image/png;base64,'))) throw new Error('サーバーから正しい画像を受信できませんでした。');
     resultUrl = data.original.data_url;
     $('result').src = resultUrl; $('result').hidden = false; $('resultPlaceholder').hidden = true;
     const filename = selectedFile.name.replace(/\.[^.]+$/, '') || 'image';
-    $('download').href = resultUrl; $('download').download = filename + '_original.png';
-    $('downloadLite').href = data.lite.data_url; $('downloadLite').download = filename + '_lite.png';
+    downloadImages = {
+      original: { dataUrl: data.original.data_url, filename: filename + '_original.png' },
+      lite: { dataUrl: data.lite.data_url, filename: filename + '_lite.png' },
+    };
     $('downloads').hidden = false;
     const describe = image => `${image.width} × ${image.height}px / ${(image.size_bytes / 1024).toFixed(1)} KB`;
     $('sizes').textContent = `高画質版: ${describe(data.original)} ｜ 軽量版: ${describe(data.lite)}`;
@@ -73,7 +113,10 @@ $('remove').addEventListener('click', async () => {
   } catch (error) { status(error.message || '通信に失敗しました。', true); }
   finally { busy = false; $('remove').disabled = false; $('file').disabled = false; $('spinner').hidden = true; $('buttonText').textContent = '背景を削除（輪郭抽出）'; $('drop').removeAttribute('aria-disabled'); }
 });
-window.addEventListener('pagehide', () => { if (originalUrl) URL.revokeObjectURL(originalUrl); });
+window.addEventListener('pagehide', () => {
+  if (originalUrl) URL.revokeObjectURL(originalUrl);
+  for (const url of downloadUrls) releaseDownloadUrl(url);
+});
 </script>
 </body>
 </html>
