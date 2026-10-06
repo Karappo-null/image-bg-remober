@@ -20,7 +20,7 @@ def get_session():
     global _session
     with _session_lock:
         if _session is None:
-            _session = new_session('u2netp')
+            _session = new_session("u2net")
     return _session
 
 
