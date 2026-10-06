@@ -15,7 +15,7 @@ python -m pip install -r requirements.txt
 python app.py
 ```
 
-ブラウザで `http://localhost:5000` を開き、画像を選択して「背景を削除（輪郭抽出）」を押します。処理後に「透過PNGをダウンロード」を押してください。
+ブラウザで `http://localhost:5000` を開き、画像を選択して「背景を削除（輪郭抽出）」を押します。処理後にプレビュー下の「高画質版をダウンロード」または「軽量版をダウンロード」を押してください。高画質版は元の解像度、軽量版は縦横比を保って最大200pxに縮小したRGBA PNGです。軽量版はPNG最適化を行い、48KiBを超える場合はさらに縮小します。小さい画像は拡大しません。ファイル名は `元のファイル名_original.png` と `元のファイル名_lite.png` で区別できます。
 
 初回の背景除去時に、rembgがU²-Netの標準の高精度な学習済みモデル **u2net**（約176MB）を自動ダウンロードします。CPUで動作します。初回にはインターネット接続とモデル保存先への書き込み権限が必要です。モデルは既定で `~/.u2net` に保存され、以後は再利用されます。`U2NET_HOME` で保存先を変更できます。GitHubのモデル配布先とリダイレクト先へのHTTPSアクセスを許可してください。
 
@@ -38,10 +38,12 @@ image-bg-remober/
 ## API
 
 - `GET /`: アップロード・比較画面。
-- `POST /remove-bg`: multipart/form-data の `image` フィールドで画像を送信。成功時は `image/png` の透過PNGを返します。画像未選択・不正画像は400、サイズ超過は413、モデル取得・背景除去エラーは503のJSONレスポンスです。
+- `POST /remove-bg`: multipart/form-data の `image` フィールドで画像を送信。`variants=both` も送信すると、高画質版と軽量版を含むJSONを返します（`original` / `lite` の各オブジェクトに `data_url`、`width`、`height`、`size_bytes`）。`data_url` はBase64エンコードした透過PNGです。従来の利用方法との互換性のため、`variants` を省略すると `image/png` の高画質版を返します。画像未選択・不正画像は400、サイズ超過は413、モデル取得・背景除去エラーは503のJSONレスポンスです。
 
 ```bash
 curl -f -F image=@photo.jpg http://localhost:5000/remove-bg -o transparent.png
+# 両方のPNGを含むJSON
+curl -f -F image=@photo.jpg -F variants=both http://localhost:5000/remove-bg -o variants.json
 ```
 
 `python app.py` は開発用サーバーを起動します。公開運用には本番用WSGIサーバー、HTTPS、認証・レート制限などを別途設定してください。
@@ -52,4 +54,4 @@ curl -f -F image=@photo.jpg http://localhost:5000/remove-bg -o transparent.png
 python -m unittest discover -s tests -v
 ```
 
-APIの入力検証、容量制限、PNG・アルファチャンネルの返却、モデルエラー時の応答を検証します。この単体テストでは推論をモックし、モデルダウンロードは不要です。実モデルの動作確認には起動後に画像をアップロードしてください。
+APIの入力検証、容量制限、PNG・アルファチャンネルの返却、高画質版の画素保持、軽量版の縦横比・寸法・容量・小さい画像の非拡大、モデルエラー時の応答を検証します。この単体テストでは推論をモックし、モデルダウンロードは不要です。実モデルの動作確認には起動後に画像をアップロードしてください。

@@ -1,3 +1,4 @@
+import base64
 import io
 import logging
 import threading
@@ -22,6 +23,21 @@ def get_session():
         if _session is None:
             _session = new_session("u2net")
     return _session
+
+
+def encode_png(image, optimize=False):
+    output = io.BytesIO()
+    image.save(output, format='PNG', optimize=optimize)
+    return output.getvalue()
+
+
+def png_payload(image, content):
+    return {
+        'data_url': 'data:image/png;base64,' + base64.b64encode(content).decode('ascii'),
+        'width': image.width,
+        'height': image.height,
+        'size_bytes': len(content),
+    }
 
 
 @app.get('/')
@@ -49,7 +65,21 @@ def remove_background():
             Image.DecompressionBombError, Image.DecompressionBombWarning):
         return jsonify(error='画像を読み込めません。対応形式の画像を選択してください。'), 400
     try:
-        result = remove(image, session=get_session())
+        result = remove(image, session=get_session()).convert('RGBA')
+        if request.form.get('variants') == 'both':
+            original = encode_png(result)
+            lite = result.copy()
+            lite.thumbnail((200, 200), Image.Resampling.LANCZOS)
+            lite_png = encode_png(lite, optimize=True)
+            # Keep even detailed images within 48 KiB without losing transparency.
+            while len(lite_png) > 48 * 1024 and max(lite.size) > 1:
+                bound = max(1, int(max(lite.size) * 0.85))
+                lite.thumbnail((bound, bound), Image.Resampling.LANCZOS)
+                lite_png = encode_png(lite, optimize=True)
+            response = jsonify(original=png_payload(result, original),
+                               lite=png_payload(lite, lite_png))
+            response.headers['Cache-Control'] = 'no-store'
+            return response
         output = io.BytesIO()
         result.save(output, format='PNG')
         output.seek(0)
