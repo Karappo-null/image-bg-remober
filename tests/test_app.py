@@ -16,6 +16,10 @@ class ApiTests(unittest.TestCase):
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
         self.assertIn('背景を削除'.encode(), response.data)
+        self.assertIn(b'<h1>Image Background Remover</h1>', response.data)
+        self.assertIn('輪郭を認識し、背景を透明にします。'.encode(), response.data)
+        self.assertNotIn(b'ClearCut', response.data)
+        self.assertNotIn(b'<footer>', response.data)
 
     def test_missing_image(self):
         self.assertEqual(self.client.post('/remove-bg').status_code, 400)
@@ -66,19 +70,40 @@ class ApiTests(unittest.TestCase):
                     self.assertEqual(len(content), payload['size_bytes'])
                     image = Image.open(io.BytesIO(content))
                     self.assertEqual(image.format, 'PNG')
-                    self.assertEqual(image.mode, 'RGBA')
+                    self.assertEqual(image.mode, 'RGBA' if name == 'original' else 'P')
                     self.assertEqual(image.size, (payload['width'], payload['height']))
-                    self.assertLess(image.getchannel('A').getextrema()[0], 255)
+                    self.assertLess(image.convert('RGBA').getchannel('A').getextrema()[0], 255)
                     decoded[name] = image
                 self.assertEqual(decoded['original'].tobytes(), result.tobytes())
                 lite = decoded['lite']
-                self.assertLessEqual(max(lite.size), 200)
+                expected_size = result.copy()
+                expected_size.thumbnail((200, 200), Image.Resampling.LANCZOS)
+                self.assertEqual(lite.size, expected_size.size)
+                self.assertLessEqual(len(lite.getcolors()), 64)
                 self.assertLessEqual(response.json['lite']['size_bytes'], 48 * 1024)
                 self.assertAlmostEqual(lite.width / lite.height, size[0] / size[1], delta=0.03)
                 if max(size) <= 200:
                     self.assertEqual(lite.size, size)
                 response.request.close()
                 response.close()
+
+    def test_palette_preserves_transparent_and_semitransparent_pixels(self):
+        result = Image.new('RGBA', (90, 30), (255, 0, 0, 0))
+        result.paste((0, 255, 0, 128), (30, 0, 60, 30))
+        result.paste((0, 0, 255, 255), (60, 0, 90, 30))
+        source = io.BytesIO()
+        result.save(source, format='PNG')
+        source.seek(0)
+        with patch('app.get_session', return_value=object()), patch('app.remove', return_value=result):
+            response = self.client.post('/remove-bg', data={'image': (source, 'alpha.png'), 'variants': 'both'})
+        self.assertEqual(response.status_code, 200)
+        content = base64.b64decode(response.json['lite']['data_url'].split(',', 1)[1])
+        with Image.open(io.BytesIO(content)) as lite:
+            self.assertEqual(lite.mode, 'P')
+            self.assertLessEqual(len(lite.getcolors()), 64)
+            rgba = lite.convert('RGBA')
+            self.assertEqual([rgba.getpixel((x, 15))[3] for x in (15, 45, 75)], [0, 128, 255])
+        response.close()
 
     def test_model_error(self):
         source = io.BytesIO()

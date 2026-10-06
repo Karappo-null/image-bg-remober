@@ -70,12 +70,10 @@ def remove_background():
             original = encode_png(result)
             lite = result.copy()
             lite.thumbnail((200, 200), Image.Resampling.LANCZOS)
+            # FASTOCTREE supports RGBA and stores alpha in the PNG palette.
+            lite = lite.quantize(colors=64, method=Image.Quantize.FASTOCTREE,
+                                 dither=Image.Dither.NONE)
             lite_png = encode_png(lite, optimize=True)
-            # Keep even detailed images within 48 KiB without losing transparency.
-            while len(lite_png) > 48 * 1024 and max(lite.size) > 1:
-                bound = max(1, int(max(lite.size) * 0.85))
-                lite.thumbnail((bound, bound), Image.Resampling.LANCZOS)
-                lite_png = encode_png(lite, optimize=True)
             response = jsonify(original=png_payload(result, original),
                                lite=png_payload(lite, lite_png))
             response.headers['Cache-Control'] = 'no-store'
