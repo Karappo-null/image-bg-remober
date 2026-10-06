@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+.u2net/
+tmp/
+# ONNX Runtime local session metadata
+:memory:.ses
