@@ -11,8 +11,6 @@ from werkzeug.exceptions import RequestEntityTooLarge
 
 register_heif_opener()
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
-Image.MAX_IMAGE_PIXELS = 25_000_000
 _session = None
 _session_lock = threading.Lock()
 
@@ -47,7 +45,7 @@ def index():
 
 @app.errorhandler(RequestEntityTooLarge)
 def too_large(_error):
-    return jsonify(error='画像は20MB以下にしてください。'), 413
+    return jsonify(error='アップロードを受け付けられません。サーバー設定を確認してください。'), 413
 
 
 @app.post('/remove-bg')
@@ -56,11 +54,23 @@ def remove_background():
     if upload is None or not upload.filename:
         return jsonify(error='画像ファイルを選択してください。'), 400
     try:
+        rotation = int(request.form.get('rotation', '0'))
+        if rotation % 90:
+            raise ValueError
+        rotation %= 360
+    except (ValueError, TypeError):
+        return jsonify(error='回転角度は90度単位で指定してください。'), 400
+    try:
         with Image.open(upload.stream) as source:
-            if source.width * source.height > Image.MAX_IMAGE_PIXELS:
-                return jsonify(error='画像は2500万画素以下にしてください。'), 400
+            # Resize before EXIF transposition and RGBA conversion to avoid full-size copies.
+            # thumbnail also requests decoder-side reduction for supported JPEGs.
+            source.thumbnail((2500, 2500), Image.Resampling.LANCZOS)
             image = ImageOps.exif_transpose(source).convert('RGBA')
-            image.load()
+            if rotation:
+                transpose = {90: Image.Transpose.ROTATE_270,
+                             180: Image.Transpose.ROTATE_180,
+                             270: Image.Transpose.ROTATE_90}
+                image = image.transpose(transpose[rotation])
     except (UnidentifiedImageError, OSError, ValueError,
             Image.DecompressionBombError, Image.DecompressionBombWarning):
         return jsonify(error='画像を読み込めません。対応形式の画像を選択してください。'), 400

@@ -33,6 +33,53 @@ class ApiTests(unittest.TestCase):
             response = self.client.post('/remove-bg', data={'image': (io.BytesIO(b'x' * 256), 'large.png')})
         self.assertEqual(response.status_code, 413)
 
+    def test_large_image_is_resized_before_inference(self):
+        source = io.BytesIO()
+        large = Image.new('RGB', (6000, 4500), 'red')
+        large.save(source, format='JPEG')
+        large.close()
+        source.seek(0)
+        with patch('app.get_session', return_value=object()), patch('app.remove', side_effect=lambda image, session: image) as remove:
+            response = self.client.post('/remove-bg', data={'image': (source, 'large.jpg'), 'rotation': '90'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(remove.call_args.args[0].size, (1875, 2500))
+        self.assertEqual(remove.call_args.args[0].mode, 'RGBA')
+        response.request.close()
+        response.close()
+
+    def test_upload_over_20mb_is_accepted(self):
+        source = io.BytesIO()
+        Image.new('RGB', (8, 8), 'red').save(source, format='PNG')
+        source.write(b'\0' * (21 * 1024 * 1024))
+        source.seek(0)
+        with patch('app.get_session', return_value=object()), patch('app.remove', side_effect=lambda image, session: image):
+            response = self.client.post('/remove-bg', data={'image': (source, 'large.png')})
+        self.assertEqual(response.status_code, 200)
+        response.request.close()
+        response.close()
+
+    def test_rotation_is_applied_before_inference(self):
+        image = Image.new('RGBA', (3, 2))
+        image.putdata([(i * 30, 0, 0, 255) for i in range(6)])
+        for angle, transpose in [(90, Image.Transpose.ROTATE_270), (-90, Image.Transpose.ROTATE_90), (180, Image.Transpose.ROTATE_180), (360, None)]:
+            with self.subTest(angle=angle):
+                source = io.BytesIO()
+                image.save(source, format='PNG')
+                source.seek(0)
+                with patch('app.get_session', return_value=object()), patch('app.remove', side_effect=lambda image, session: image) as remove:
+                    response = self.client.post('/remove-bg', data={'image': (source, 'photo.png'), 'rotation': str(angle)})
+                self.assertEqual(response.status_code, 200)
+                expected = image.transpose(transpose) if transpose is not None else image
+                actual = remove.call_args.args[0]
+                self.assertEqual(actual.size, expected.size)
+                self.assertEqual(actual.tobytes(), expected.tobytes())
+                response.close()
+
+    def test_invalid_rotation(self):
+        for angle in ['45', 'invalid']:
+            response = self.client.post('/remove-bg', data={'image': (io.BytesIO(b'x'), 'test.png'), 'rotation': angle})
+            self.assertEqual(response.status_code, 400)
+
     def test_png_response_preserves_alpha(self):
         source = io.BytesIO()
         Image.new('RGB', (8, 8), 'red').save(source, format='PNG')
